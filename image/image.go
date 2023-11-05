@@ -154,7 +154,7 @@ func processLayerTarballs(imageShaHex string, fullImageHex string) {
 	//Untar all layer files, which is basis of container root fs
 	for _, layer := range mf[0].Layers {
 		imgLayerDir := imageDir + "/" + layer[:12] + "/fs"
-		log.Printf("Umcompressing layer to %s\n", &imgLayerDir)
+		log.Printf("Umcompressing layer to %s\n", imgLayerDir)
 		_ = os.MkdirAll(imgLayerDir, 0755)
 		srcLayer := tempPathDir + "/" + layer
 		if err := utils.Untar(srcLayer, imgLayerDir); err != nil {

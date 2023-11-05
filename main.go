@@ -39,7 +39,7 @@ func main() {
 		if err := flags.Parse(os.Args[2:]); err != nil {
 			fmt.Println("Error parsing input parameters: ", err)
 		}
-		if len(flag.Args()) < 2 {
+		if len(flags.Args()) < 2 {
 			log.Fatal("Please pass image name and command to run")
 		}
 
@@ -52,7 +52,7 @@ func main() {
 		}
 
 		//Initialize the container based on inputs
-		run.InitContainer(*mem, *swap, *pids, *cpus, flag.Args()[0], flag.Args()[1:])
+		run.InitContainer(*mem, *swap, *pids, *cpus, flags.Args()[0], flags.Args()[1:])
 	case "ps":
 		ps.PrintRunningContainers()
 	case "clean":
@@ -61,7 +61,7 @@ func main() {
 		flag.Parse()
 
 		if containerId == "" {
-			log.Fatal("Need containerId input for cleaning container resource")
+			log.Fatal("Need containerId input to clean container resource")
 		}
 
 		run.CleanUpContainer(containerId)
