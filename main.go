@@ -13,7 +13,7 @@ import (
 
 func main() {
 	command := os.Args[1]
-	if len(os.Args) < 2 || utils.ValidCommand(command) {
+	if len(os.Args) < 2 || !utils.ValidCommand(command) {
 		utils.ShowGuide()
 		os.Exit(1)
 	}

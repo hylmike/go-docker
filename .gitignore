@@ -1,0 +1,8 @@
+#Ignore mac system files
+.DS_store
+
+#Ignore build export
+go-docker
+
+#Ignore envirobment file
+.env
