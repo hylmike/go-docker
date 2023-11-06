@@ -117,7 +117,7 @@ func downloadImage(img v1.Image, imageShaHex string, src string) {
 func untarFile(imageShaHex string) {
 	pathDir := utils.GetDockerTempPath() + "/" + imageShaHex
 	pathTar := pathDir + "/package.tar"
-	if err := utils.Untar(pathTar, pathDir); err != nil {
+	if err := utils.UnCompress(pathTar, pathDir); err != nil {
 		log.Fatalf("Failed to untarging file: %v\n", err)
 	}
 }
@@ -157,7 +157,7 @@ func processLayerTarballs(imageShaHex string, fullImageHex string) {
 		log.Printf("Umcompressing layer to %s\n", imgLayerDir)
 		_ = os.MkdirAll(imgLayerDir, 0755)
 		srcLayer := tempPathDir + "/" + layer
-		if err := utils.Untar(srcLayer, imgLayerDir); err != nil {
+		if err := utils.UnCompress(srcLayer, imgLayerDir); err != nil {
 			log.Fatalf("Failed to untar layer file %s: %v\n", srcLayer, err)
 		}
 	}

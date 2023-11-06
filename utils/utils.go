@@ -2,6 +2,7 @@ package utils
 
 import (
 	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -82,14 +83,30 @@ func InitDockerDirs() error {
 	return CreateDirIfNotExist(dirs)
 }
 
-func Untar(tarball, target string) error {
+func UnCompress(source, target string) error {
 	hardLinks := make(map[string]string)
-	reader, err := os.Open(tarball)
+	reader, err := os.Open(source)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
-	tarReader := tar.NewReader(reader)
+
+	fileExt := filepath.Ext(source)
+	var tarReader *tar.Reader
+	//If compress file is .tar.gz file
+	if fileExt == ".gz" {
+		unzipStream, err := gzip.NewReader(reader)
+		if err != nil {
+			log.Fatalf("Failed to extract gz file %s: %v\n", source, err)
+		}
+		tarReader = tar.NewReader(unzipStream)
+		//If compress file is .tar file
+	} else if fileExt == ".tar" {
+		tarReader = tar.NewReader(reader)
+		//If not these 2 types, then log error and exit
+	} else {
+		log.Fatalf("Invalid compress file type %s\n", fileExt)
+	}
 
 	for {
 		header, err := tarReader.Next()
