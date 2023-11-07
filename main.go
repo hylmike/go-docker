@@ -71,16 +71,21 @@ func main() {
 		run.ExecCommandInsideContainer(*mem, *swap, *pids, *cpus, flags.Args()[0], *image, flags.Args()[1:])
 	case "ps":
 		ps.PrintRunningContainers()
+	case "setup-netns":
+		network.SetupNewNetworkNamespace(os.Args[2])
+	case "setup-veth":
+		network.SetupContainerNetworkInterface(os.Args[2])
 	case "clean":
-		var containerId string
-		flag.StringVar(&containerId, "containerId", "", "Container ID to be cleaned")
-		flag.Parse()
-
-		if containerId == "" {
-			log.Fatal("Need containerId input to clean container resource")
+		flags := flag.FlagSet{}
+		containerId := flags.String("containerId", "", "Container ID to be cleaned")
+		if err := flags.Parse(os.Args[2:]); err != nil {
+			fmt.Println("Error parsing input parameters: ", err)
 		}
 
-		run.CleanUpContainer(containerId)
+		if *containerId == "" {
+			log.Fatal("Need containerId input to clean container resource")
+		}
+		run.CleanUpContainer(*containerId)
 	default:
 		utils.ShowGuide()
 	}

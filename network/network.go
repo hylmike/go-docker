@@ -2,8 +2,10 @@ package network
 
 import (
 	"crypto/rand"
+	"fmt"
 	"go-docker/utils"
 	"log"
+	mathRand "math/rand"
 	"net"
 
 	"github.com/vishvananda/netlink"
@@ -99,5 +101,84 @@ func SetupLocalInterface() {
 			}
 			netlink.LinkSetUp(link)
 		}
+	}
+}
+
+func SetupNewNetworkNamespace(containerId string) {
+	_ = utils.CreateDirIfNotExist([]string{utils.GetDockerNetNsPath()})
+	nsMount := utils.GetDockerNetNsPath() + "/" + containerId
+	if _, err := unix.Open(nsMount, unix.O_RDONLY|unix.O_CREAT|unix.O_EXCL, 0644); err != nil {
+		log.Fatalf("Failed to open mount file: %v\n", err)
+	}
+
+	fd, err := unix.Open("/proc/self/ns/net", unix.O_RDONLY, 0)
+	defer unix.Close(fd)
+
+	if err != nil {
+		log.Fatalf("Failed to open net file: %v\n", err)
+	}
+
+	if err := unix.Unshare(unix.CLONE_NEWNET); err != nil {
+		log.Fatalf("Failed to create unshared new net: %v\n", err)
+	}
+	if err := unix.Mount("/proc/self/ns/net", nsMount, "bind", unix.MS_BIND, ""); err != nil {
+		log.Fatalf("Failed to mount network with file: %v\n", err)
+	}
+	if err := unix.Setns(fd, unix.CLONE_NEWNET); err != nil {
+		log.Fatalf("Failed to set network with file: %v\n", err)
+	}
+}
+
+func createPrivateIPAddress() string {
+	byte1 := mathRand.Intn(254)
+	byte2 := mathRand.Intn(254)
+
+	return fmt.Sprintf("172,29,%d.%d", byte1, byte2)
+}
+
+func SetupContainerNetworkInterface(containerId string) {
+	nsMount := utils.GetDockerNetNsPath() + "/" + containerId
+	fd, err := unix.Open(nsMount, unix.O_RDONLY, 0)
+	defer unix.Close(fd)
+
+	if err != nil {
+		log.Fatalf("Failed to open network mount file: %v\n", err)
+	}
+
+	//Set container veth1 to new network namespace
+	veth1 := "veth1" + containerId[:6]
+	veth1Link, err := netlink.LinkByName(veth1)
+	if err != nil {
+		log.Fatalf("Failed to fetch veth1: %v\n", err)
+	}
+	if err := netlink.LinkSetNsFd(veth1Link, fd); err != nil {
+		log.Fatalf("Failed to set network namespace for veth1: %v\n", err)
+	}
+
+	if err := unix.Setns(fd, unix.CLONE_NEWNET); err != nil {
+		log.Fatalf("Failed to set network: %v\n", err)
+	}
+
+	addr, _ := netlink.ParseAddr(createPrivateIPAddress() + "/16")
+	if err := netlink.AddrAdd(veth1Link, addr); err != nil {
+		log.Fatalf("Failed to assign IP to veth1: %v\n", err)
+	}
+
+	//Activate veth1 interface
+	if err := netlink.LinkSetUp(veth1Link); err != nil {
+		log.Fatalf("Failed to activate veth1: %v\n", err)
+	}
+
+	//Add a default route
+	const defaultGateway = "172.29.0.1"
+	route := netlink.Route{
+		Scope:     netlink.SCOPE_UNIVERSE,
+		LinkIndex: veth1Link.Attrs().Index,
+		Gw:        net.ParseIP(defaultGateway),
+		Dst:       nil,
+	}
+
+	if err := netlink.RouteAdd(&route); err != nil {
+		log.Fatalf("Failed to add default route: %v\n", err)
 	}
 }

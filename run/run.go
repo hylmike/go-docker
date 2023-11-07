@@ -85,7 +85,7 @@ func prepareAndExecuteContainer(
 ) {
 	//Setup network namaspace
 	cmd := &exec.Cmd{
-		Path:   "proc/self/exe",
+		Path:   "/proc/self/exe",
 		Args:   []string{"/proc/self/exe", "setup-netns", containerId},
 		Stdout: os.Stdout,
 		Stdin:  os.Stdin,
@@ -94,7 +94,7 @@ func prepareAndExecuteContainer(
 
 	//Setup virtual ethernet inferface
 	cmd = &exec.Cmd{
-		Path:   "proc/self/exe",
+		Path:   "/proc/self/exe",
 		Args:   []string{"/proc/self/exe", "setup-veth", containerId},
 		Stdout: os.Stdout,
 		Stdin:  os.Stdin,
