@@ -25,6 +25,11 @@ const dockerImagesPath = dockerHomePath + "/images"
 const dockerContainersPath = "/var/run/go-docker/containers"
 const dockerNetNsPath = "/var/run/go-docker/net-ns"
 
+const File_OtherReadExecute = 0755
+const File_OtherNoPermit = 0700
+const File_OtherReadOnly = 0644
+const File_AllPermit = 0700
+
 func GetDockerHomePath() string {
 	return dockerHomePath
 }
@@ -93,18 +98,18 @@ func UnCompress(source, target string) error {
 
 	fileExt := filepath.Ext(source)
 	var tarReader *tar.Reader
-	//If compress file is .tar.gz file
 	if fileExt == ".gz" {
+		//If compress file is .tar.gz file
 		unzipStream, err := gzip.NewReader(reader)
 		if err != nil {
 			log.Fatalf("Failed to extract gz file %s: %v\n", source, err)
 		}
 		tarReader = tar.NewReader(unzipStream)
-		//If compress file is .tar file
 	} else if fileExt == ".tar" {
+		//If compress file is .tar file
 		tarReader = tar.NewReader(reader)
-		//If not these 2 types, then log error and exit
 	} else {
+		//If not these 2 types, then log error and exit
 		log.Fatalf("Invalid compress file type %s\n", fileExt)
 	}
 

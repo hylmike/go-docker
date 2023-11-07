@@ -2,10 +2,12 @@ package network
 
 import (
 	"crypto/rand"
+	"go-docker/utils"
 	"log"
 	"net"
 
 	"github.com/vishvananda/netlink"
+	"golang.org/x/sys/unix"
 )
 
 const defaultBrige string = "br0"
@@ -69,4 +71,33 @@ func SetupVirtualEthOnHost(containerId string) error {
 	netlink.LinkSetMaster(veth0Struct, dockerBridge)
 
 	return nil
+}
+
+func JoinContainerNetworkNamespace(containerId string) error {
+	nsMountPath := utils.GetDockerNetNsPath() + "/" + containerId
+	fd, err := unix.Open(nsMountPath, unix.O_RDONLY, 0)
+	if err != nil {
+		log.Printf("Failed to open network mount file for container %s: %v\n", containerId, err)
+		return err
+	}
+
+	if err := unix.Setns(fd, unix.CLONE_NEWNET); err != nil {
+		log.Printf("Failed to set new network for container %s: %v\n", containerId, err)
+		return err
+	}
+
+	return nil
+}
+
+func SetupLocalInterface() {
+	links, _ := netlink.LinkList()
+	for _, link := range links {
+		if link.Attrs().Name == "lo" {
+			loAddr, _ := netlink.ParseAddr("127.0.0.1/32")
+			if err := netlink.AddrAdd(link, loAddr); err != nil {
+				log.Printf("Failed to configure local interface: %v\n", err)
+			}
+			netlink.LinkSetUp(link)
+		}
+	}
 }

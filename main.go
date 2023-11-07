@@ -53,6 +53,22 @@ func main() {
 
 		//Initialize the container based on inputs
 		run.InitContainer(*mem, *swap, *pids, *cpus, flags.Args()[0], flags.Args()[1:])
+	case "inner-mode":
+		//Inside container mode, to run command inside container
+		flags := flag.FlagSet{}
+		mem := flags.Int("mem", -1, "Max RAM to allow in MB")
+		swap := flags.Int("swap", -1, "Max swap to allow in MB")
+		pids := flags.Int("pids", -1, "Number of max processes to allow")
+		cpus := flags.Float64("cpus", -1, "Number of CPU cores to allow to use")
+		image := flags.String("img", "", "Container image")
+
+		if err := flags.Parse(os.Args[2:]); err != nil {
+			fmt.Printf("Failed to parse input flags: %v\n", err)
+		}
+		if len(flags.Args()) < 2 {
+			log.Fatalln("Need image name and command to run inside container")
+		}
+		run.ExecCommandInsideContainer(*mem, *swap, *pids, *cpus, flags.Args()[0], *image, flags.Args()[1:])
 	case "ps":
 		ps.PrintRunningContainers()
 	case "clean":

@@ -3,6 +3,7 @@ package run
 import (
 	"crypto/rand"
 	"fmt"
+	"go-docker/cgroups"
 	"go-docker/image"
 	"go-docker/network"
 	"go-docker/utils"
@@ -63,12 +64,12 @@ func mountOveryFileSystem(containerId string, imgShaHex string) {
 
 	imageBasePath := image.GetBasePathForImage(imgShaHex)
 	for _, layer := range mf[0].Layers {
-		srcLayers = append(srcLayers, imageBasePath+"/"+layer[:12]+"/fs")
+		srcLayers = append([]string{imageBasePath + "/" + layer[:12] + "/fs"}, srcLayers...)
 	}
 
 	containerFSHome := getContainerFSHome(containerId)
-	montOptions := "lowerdir=" + strings.Join(srcLayers, ":") + ",upperdir=" + containerFSHome + "/upperdir, workdir=" + containerFSHome + "workdir"
-	if err := unix.Mount("none", containerFSHome+"/mnt", "overlay", 0, montOptions); err != nil {
+	mountOptions := "lowerdir=" + strings.Join(srcLayers, ":") + ",upperdir=" + containerFSHome + "/upperdir,workdir=" + containerFSHome + "/workdir"
+	if err := unix.Mount("none", containerFSHome+"/mnt", "overlay", 0, mountOptions); err != nil {
 		log.Fatalf("Mount overlay file system failed: %v\n", err)
 	}
 }
@@ -118,7 +119,7 @@ func prepareAndExecuteContainer(
 
 	args := append([]string{containerId}, cmdArgs...)
 	args = append(options, args...)
-	args = append([]string{"child-mode"}, args...)
+	args = append([]string{"inner-mode"}, args...)
 	cmd = exec.Command("/proc/self/exe", args...)
 	cmd.SysProcAttr = &unix.SysProcAttr{
 		/*
@@ -163,7 +164,7 @@ func InitContainer(mem int, swap int, pids int, cpus float64, src string, option
 	}
 
 	prepareAndExecuteContainer(mem, swap, pids, cpus, containerId, imageShaHex, options)
-	log.Println("Container setup in finished!")
+	log.Println("Container setup is finished!")
 }
 
 func unmountNetworkNamespace(containerId string) {
@@ -177,20 +178,6 @@ func unmountContainerFileSystem(containerId string) {
 	mountFSPath := utils.GetDockerContainerPath() + "/" + containerId + "/fs/mnt"
 	if err := unix.Unmount(mountFSPath, 0); err != nil {
 		log.Fatalf("Failed to unmount container file system %s: %v\n", mountFSPath, err)
-	}
-}
-
-func removeCGroups(containerId string) {
-	cgroupDirs := []string{
-		"/sys/fs/cgroup/memory/go-docker/" + containerId,
-		"/sys/fs/cgroup/pids/go-docker/" + containerId,
-		"/sys/fs/cgroup/cpu/go-docker/" + containerId,
-	}
-
-	for _, cgroupDir := range cgroupDirs {
-		if err := os.Remove(cgroupDir); err != nil {
-			log.Fatalf("Failed to remove cgroup dir %s: %v\n", cgroupDir, err)
-		}
 	}
 }
 
@@ -209,6 +196,101 @@ func CleanUpContainer(containerId string) {
 
 	unmountNetworkNamespace(containerId)
 	unmountContainerFileSystem(containerId)
-	removeCGroups(containerId)
+	cgroups.RemoveCGroups(containerId)
 	removeContainerDirs(containerId)
+}
+
+func copyNameserverConfig(containerId string) error {
+	resolveFilePaths := []string{
+		"/var/run/systemd/resolve/resolv.conf",
+		"/etc/gockerresolv.conf",
+		"/etc/resolv.conf",
+	}
+
+	for _, resolveFilePath := range resolveFilePaths {
+		if _, err := os.Stat(resolveFilePath); os.IsNotExist(err) {
+			continue
+		} else {
+			return utils.CopyFile(resolveFilePath, getContainerFSHome(containerId)+"/mnt/etc/resolv.conf")
+		}
+	}
+
+	return nil
+}
+
+func ExecCommandInsideContainer(
+	mem int,
+	swap int,
+	pids int,
+	cpus float64,
+	containerId string,
+	imgShaHex string,
+	args []string,
+) {
+	mountPath := getContainerFSHome(containerId) + "/mnt"
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	imgConfig := image.ParseContainerConfig(imgShaHex)
+
+	if err := unix.Sethostname([]byte(containerId)); err != nil {
+		log.Fatalf("Failed to set hostname for container %s: %v\n", containerId, err)
+	}
+
+	if err := network.JoinContainerNetworkNamespace(containerId); err != nil {
+		log.Fatalf("Failed to join network namespace for container %s: %v\n", containerId, err)
+	}
+
+	cgroups.CreateCGroup(containerId, true)
+	cgroups.ConfigCGroup(containerId, mem, swap, pids, cpus)
+
+	if err := copyNameserverConfig(containerId); err != nil {
+		log.Fatalf("Failed to copy resolve.conf: %v\n", err)
+	}
+	if err := unix.Chroot(mountPath); err != nil {
+		log.Fatalf("Failed to chroot: %v\n", err)
+	}
+	if err := os.Chdir("/"); err != nil {
+		log.Fatalf("Failed to change to root directory: %v\n", err)
+	}
+	utils.CreateDirIfNotExist([]string{"/proc", "/sys"})
+	if err := unix.Mount("proc", "/proc", "proc", 0, ""); err != nil {
+		log.Fatalf("Failed to mount proc: %v\n", err)
+	}
+	if err := unix.Mount("tmpfs", "/tmp", "tmpfs", 0, ""); err != nil {
+		log.Fatalf("Failed to mount tmpfs: %v\n", err)
+	}
+	if err := unix.Mount("tmpfs", "/dev", "tmpfs", 0, ""); err != nil {
+		log.Fatalf("Failed to mount tmpfs on /dev: %v\n", err)
+	}
+	utils.CreateDirIfNotExist([]string{"/dev/pts"})
+	if err := unix.Mount("devpts", "/dev/pts", "devpts", 0, ""); err != nil {
+		log.Fatalf("Failed to mount devpts: %v\n", err)
+	}
+	if err := unix.Mount("sysfs", "/sys", "sysfs", 0, ""); err != nil {
+		log.Fatalf("Failed to mount sysfs: %v\n", err)
+	}
+	network.SetupLocalInterface()
+
+	cmd.Env = imgConfig.Config.Env
+	cmd.Run()
+
+	//Unmount resource
+	if err := unix.Unmount("/dev/pts", 0); err != nil {
+		log.Fatalf("Failed to unmount devpts: %v\n", err)
+	}
+	if err := unix.Unmount("/dev", 0); err != nil {
+		log.Fatalf("Failed to unmount dev: %v\n", err)
+	}
+	if err := unix.Unmount("/sys", 0); err != nil {
+		log.Fatalf("Failed to unmount sys: %v\n", err)
+	}
+	if err := unix.Unmount("/proc", 0); err != nil {
+		log.Fatalf("Failed to unmount proc: %v\n", err)
+	}
+	if err := unix.Unmount("/tmp", 0); err != nil {
+		log.Fatalf("Failed to unmount tmp: %v\n", err)
+	}
 }

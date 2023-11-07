@@ -12,7 +12,17 @@ import (
 )
 
 type imageEntries map[string]string
+
 type imagesDB map[string]imageEntries
+
+type imageConfig struct {
+	Env []string `json:"Env"`
+	Cmd []string `json:"Cmd"`
+}
+
+type imageInfo struct {
+	Config imageConfig `json:"config"`
+}
 
 func GetImageNameAndTag(src string) (string, string) {
 	imageInfo := strings.Split(src, ":")
@@ -207,4 +217,20 @@ func DownloadImageIfRequired(src string) string {
 		log.Println("Image already exists, skip download")
 		return imageShaHex
 	}
+}
+
+func ParseContainerConfig(imgShaHex string) imageInfo {
+	imagesConfigPath := GetConfigPathForImage(imgShaHex)
+
+	data, err := os.ReadFile(imagesConfigPath)
+	if err != nil {
+		log.Fatalf("Failed to read image %s config file: %v\n", imgShaHex, err)
+	}
+
+	imgInfo := imageInfo{}
+	if err := json.Unmarshal(data, &imgInfo); err != nil {
+		log.Fatalf("Failed to parse image info data")
+	}
+
+	return imgInfo
 }
