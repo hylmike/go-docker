@@ -196,7 +196,7 @@ func DownloadImageIfRequired(src string) string {
 		mf, _ := img.Manifest()
 		imageShaHex = mf.Config.Digest.Hex[:12]
 		log.Printf("image hash: %v\n", imageShaHex)
-		log.Println("CHecking if image exists under with other names")
+		log.Println("Checking if image exists under with other names")
 
 		altImgName, altTag := imageExistByHash(imageShaHex)
 		if len(altImgName) > 0 && len(altTag) > 0 {
