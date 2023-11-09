@@ -6,6 +6,7 @@ import (
 	"go-docker/cgroups"
 	"go-docker/image"
 	"go-docker/network"
+	"go-docker/ps"
 	"go-docker/utils"
 	"log"
 	"os"
@@ -289,6 +290,69 @@ func SetupContainerExecCommand(
 	}
 }
 
-func ExecCommandInContainer(containerId string) {
+func getPidForRunningContainer(containerId string) int {
+	containers, err := ps.GetRunningContainers()
+	if err != nil {
+		log.Fatalf("Failed to get running containers: %v\n", err)
+	}
 
+	for _, container := range containers {
+		if container.ContainerId == containerId {
+			return container.Pid
+		}
+	}
+
+	return 0
+}
+
+func ExecCommandInContainer(containerId string) {
+	pid := getPidForRunningContainer(containerId)
+	if pid == 0 {
+		log.Fatalf("Failed to find container %s\n", containerId)
+	}
+
+	baseNsPath := "/proc/" + strconv.Itoa(pid) + "/ns"
+	ipcFd, ipcErr := os.Open(baseNsPath + "/ipc")
+	mntFd, mntErr := os.Open(baseNsPath + "/mnt")
+	netFd, netErr := os.Open(baseNsPath + "/net")
+	pidFd, pidErr := os.Open(baseNsPath + "/pid")
+	utsFd, utsErr := os.Open(baseNsPath + "/uts")
+	if ipcErr != nil || mntErr != nil || netErr != nil || pidErr != nil || utsErr != nil {
+		log.Fatalf("Unable to open namespace files for container %s!", containerId)
+	}
+
+	unix.Setns(int(ipcFd.Fd()), unix.CLONE_NEWIPC)
+	unix.Setns(int(mntFd.Fd()), unix.CLONE_NEWNS)
+	unix.Setns(int(netFd.Fd()), unix.CLONE_NEWNET)
+	unix.Setns(int(pidFd.Fd()), unix.CLONE_NEWPID)
+	unix.Setns(int(utsFd.Fd()), unix.CLONE_NEWUTS)
+
+	containerConfig, err := ps.GetContainerDetailsForId(containerId)
+	if err != nil {
+		log.Fatalf("Failed to get container config: %v\n", err)
+	}
+	imageNameAndTag := strings.Split(containerConfig.Image, ":")
+	exist, imgShaHex := image.GetImageByTag(imageNameAndTag[0], imageNameAndTag[1])
+	if !exist {
+		log.Fatalln("Failed to get image details")
+	}
+
+	imgConfig := image.ParseContainerConfig(imgShaHex)
+	containerMountPath := utils.GetDockerContainerPath() + "/" + containerId + "/fs/mnt"
+	cgroups.CreateCGroup(containerId, false)
+
+	if err := unix.Chroot(containerMountPath); err != nil {
+		log.Fatalf("Failed to chroot for container mount path: %v\n", err)
+	}
+	os.Chdir("/")
+
+	cmd := exec.Command(os.Args[3], os.Args[4:]...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = imgConfig.Config.Env
+
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("Failed to exec command in container: %v", err)
+	}
 }

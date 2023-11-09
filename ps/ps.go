@@ -12,10 +12,10 @@ import (
 )
 
 type ContainerInfo struct {
-	containerId string
-	image       string
-	command     string
-	pid         int
+	ContainerId string
+	Image       string
+	Command     string
+	Pid         int
 }
 
 const basePath string = "/sys/fs/cgroup/cpu/go-docker"
@@ -57,7 +57,7 @@ func getDistribution(containerId string) (string, error) {
 	return "", nil
 }
 
-func getContainerDetailsForId(containerId string) (ContainerInfo, error) {
+func GetContainerDetailsForId(containerId string) (ContainerInfo, error) {
 	container := ContainerInfo{}
 	var procs []string
 	procsPath := basePath + "/" + containerId + "/cgroup.procs"
@@ -95,10 +95,10 @@ func getContainerDetailsForId(containerId string) (ContainerInfo, error) {
 
 		image, _ := getDistribution(containerId)
 		container = ContainerInfo{
-			containerId: containerId,
-			image:       image,
-			command:     cmd[len(realContainerMountPath):],
-			pid:         pid,
+			ContainerId: containerId,
+			Image:       image,
+			Command:     cmd[len(realContainerMountPath):],
+			Pid:         pid,
 		}
 	}
 
@@ -120,7 +120,7 @@ func GetRunningContainers() ([]ContainerInfo, error) {
 			for _, entry := range entries {
 				if entry.IsDir() {
 					container, _ := getContainerDetailsForId(entry.Name())
-					if container.pid > 0 {
+					if container.Pid > 0 {
 						containers = append(containers, container)
 					}
 				}
@@ -139,6 +139,6 @@ func PrintRunningContainers() {
 
 	fmt.Println("CONTAINER ID\tIMAGE\tCOMMAND")
 	for _, container := range containers {
-		fmt.Printf("%s\t%s\t%s\n", container.containerId, container.image, container.command)
+		fmt.Printf("%s\t%s\t%s\n", container.ContainerId, container.Image, container.Command)
 	}
 }

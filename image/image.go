@@ -55,7 +55,7 @@ func parseImageMetadata(iDB *imagesDB) {
 	}
 }
 
-func getImageByTag(imageName string, tag string) (bool, string) {
+func GetImageByTag(imageName string, tag string) (bool, string) {
 	idb := imagesDB{}
 	parseImageMetadata(&idb)
 	for k1, v1 := range idb {
