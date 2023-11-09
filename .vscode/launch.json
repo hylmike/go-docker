@@ -12,7 +12,8 @@
             "program": "${workspaceRoot}",
             "showLog": true,
             "env": {},
-            "args": ["run", "alpine", "/bin/sh"],
+            // "args": ["run", "alpine", "/bin/sh"],
+            "args": ["ps"],
             "asRoot": true,
             "console": "integratedTerminal"
         }

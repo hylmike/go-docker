@@ -18,7 +18,7 @@ type ContainerInfo struct {
 	pid         int
 }
 
-const basePath string = "sys/fs/cgroup/cpu/go-docker"
+const basePath string = "/sys/fs/cgroup/cpu/go-docker"
 
 func getDistribution(containerId string) (string, error) {
 	var lines []string
@@ -64,7 +64,7 @@ func getContainerDetailsForId(containerId string) (ContainerInfo, error) {
 
 	file, err := os.Open(procsPath)
 	if err != nil {
-		fmt.Println("Failed to read cgroup procs")
+		fmt.Printf("Failed to read cgroup procs: %v\n", err)
 		return container, err
 	}
 	defer file.Close()
