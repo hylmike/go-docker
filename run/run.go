@@ -233,8 +233,6 @@ func ExecCommandInsideContainer(
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	// imgConfig := image.ParseContainerConfig(imgShaHex)
-
 	if err := unix.Sethostname([]byte(containerId)); err != nil {
 		log.Fatalf("Failed to set hostname for container %s: %v\n", containerId, err)
 	}
@@ -274,7 +272,6 @@ func ExecCommandInsideContainer(
 	}
 	network.SetupLocalInterface()
 
-	// cmd.Env = imgConfig.Config.Env
 	cmd.Run()
 
 	//Unmount resource
