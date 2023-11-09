@@ -80,7 +80,6 @@ func prepareAndExecuteContainer(
 	pids int,
 	cpus float64,
 	containerId string,
-	imgShaHex string,
 	cmdArgs []string,
 ) {
 	//Setup network namaspace
@@ -115,7 +114,6 @@ func prepareAndExecuteContainer(
 	if cpus > 0 {
 		options = append(options, "--cpus="+strconv.FormatFloat(cpus, 'f', 1, 64))
 	}
-	options = append(options, "--img="+imgShaHex)
 
 	args := append([]string{containerId}, cmdArgs...)
 	args = append(options, args...)
@@ -163,7 +161,7 @@ func InitContainer(mem int, swap int, pids int, cpus float64, src string, option
 		log.Fatalf("Failed to setup Veth0 on host: %v", err)
 	}
 
-	prepareAndExecuteContainer(mem, swap, pids, cpus, containerId, imageShaHex, options)
+	prepareAndExecuteContainer(mem, swap, pids, cpus, containerId, options)
 	log.Println("Container setup is finished!")
 }
 
@@ -218,13 +216,12 @@ func copyNameserverConfig(containerId string) error {
 	return nil
 }
 
-func ExecCommandInsideContainer(
+func SetupContainerExecCommand(
 	mem int,
 	swap int,
 	pids int,
 	cpus float64,
 	containerId string,
-	imgShaHex string,
 	args []string,
 ) {
 	mountPath := getContainerFSHome(containerId) + "/mnt"
@@ -290,4 +287,8 @@ func ExecCommandInsideContainer(
 	if err := unix.Unmount("/tmp", 0); err != nil {
 		log.Fatalf("Failed to unmount tmp: %v\n", err)
 	}
+}
+
+func ExecCommandInContainer(containerId string) {
+
 }

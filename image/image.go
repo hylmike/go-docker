@@ -2,6 +2,7 @@ package image
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-docker/utils"
 	"log"
 	"os"
@@ -233,4 +234,17 @@ func ParseContainerConfig(imgShaHex string) imageInfo {
 	}
 
 	return imgInfo
+}
+
+func PrintImages() {
+	idb := imagesDB{}
+	parseImageMetadata(&idb)
+
+	fmt.Printf("Image\tTag\tID\n")
+	for image, details := range idb {
+		fmt.Println(image)
+		for tag, hash := range details {
+			fmt.Printf("\t%16s\t%s\n", tag, hash)
+		}
+	}
 }

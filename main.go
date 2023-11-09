@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go-docker/image"
 	"go-docker/network"
 	"go-docker/ps"
 	"go-docker/run"
@@ -60,7 +61,6 @@ func main() {
 		swap := flags.Int("swap", -1, "Max swap to allow in MB")
 		pids := flags.Int("pids", -1, "Number of max processes to allow")
 		cpus := flags.Float64("cpus", -1, "Number of CPU cores to allow to use")
-		image := flags.String("img", "", "Container image")
 
 		if err := flags.Parse(os.Args[2:]); err != nil {
 			fmt.Printf("Failed to parse input flags: %v\n", err)
@@ -68,13 +68,17 @@ func main() {
 		if len(flags.Args()) < 2 {
 			log.Fatalln("Need image name and command to run inside container")
 		}
-		run.ExecCommandInsideContainer(*mem, *swap, *pids, *cpus, flags.Args()[0], *image, flags.Args()[1:])
+		run.SetupContainerExecCommand(*mem, *swap, *pids, *cpus, flags.Args()[0], flags.Args()[1:])
 	case "ps":
 		ps.PrintRunningContainers()
 	case "setup-netns":
 		network.SetupNewNetworkNamespace(os.Args[2])
 	case "setup-veth":
 		network.SetupContainerNetworkInterface(os.Args[2])
+	case "exec":
+		run.ExecCommandInContainer(os.Args[2])
+	case "images":
+		image.PrintImages()
 	case "clean":
 		flags := flag.FlagSet{}
 		containerId := flags.String("containerId", "", "Container ID to be cleaned")

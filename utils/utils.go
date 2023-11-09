@@ -17,7 +17,7 @@ type Manifest []struct {
 	Layers   []string
 }
 
-var Commands = []string{"run", "inner-mode", "setup-netns", "setup-veth", "ps", "clean"}
+var Commands = []string{"run", "inner-mode", "setup-netns", "setup-veth", "ps", "exec", "images", "clean"}
 
 const dockerHomePath = "/var/lib/go-docker"
 const dockerTempPath = dockerHomePath + "/tmp"
