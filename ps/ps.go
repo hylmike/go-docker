@@ -119,7 +119,7 @@ func GetRunningContainers() ([]ContainerInfo, error) {
 		} else {
 			for _, entry := range entries {
 				if entry.IsDir() {
-					container, _ := getContainerDetailsForId(entry.Name())
+					container, _ := GetContainerDetailsForId(entry.Name())
 					if container.Pid > 0 {
 						containers = append(containers, container)
 					}

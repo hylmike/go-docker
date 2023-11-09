@@ -187,7 +187,7 @@ func deleteTempImageFiles(imgShaHex string) {
 
 func DownloadImageIfRequired(src string) string {
 	imgName, tag := GetImageNameAndTag(src)
-	if requireDownload, imageShaHex := getImageByTag(imgName, tag); !requireDownload {
+	if requireDownload, imageShaHex := GetImageByTag(imgName, tag); !requireDownload {
 		log.Printf("Download metadata for %s:%s, please wait...", imgName, tag)
 		img, err := crane.Pull(strings.Join([]string{imgName, tag}, ":"))
 		if err != nil {
