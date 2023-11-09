@@ -28,7 +28,7 @@ const dockerNetNsPath = "/var/run/go-docker/net-ns"
 const File_OtherReadExecute = 0755
 const File_OtherNoPermit = 0700
 const File_OtherReadOnly = 0644
-const File_AllPermit = 0700
+const File_AllPermit = 0777
 
 func GetDockerHomePath() string {
 	return dockerHomePath

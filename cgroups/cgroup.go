@@ -21,7 +21,7 @@ func getCpuBaseDir(containerId string) string {
 	return "/sys/fs/cgroup/cpu/go-docker/" + containerId
 }
 
-func getCGroupDirc(containerId string) []string {
+func getCGroupDirs(containerId string) []string {
 	return []string{
 		getMemBaseDir(containerId),
 		getPidsBaseDir(containerId),
@@ -30,7 +30,7 @@ func getCGroupDirc(containerId string) []string {
 }
 
 func CreateCGroup(containerId string, createCGroupDirs bool) {
-	cgroupDirs := getCGroupDirc(containerId)
+	cgroupDirs := getCGroupDirs(containerId)
 
 	if createCGroupDirs {
 		if err := utils.CreateDirIfNotExist(cgroupDirs); err != nil {
@@ -39,10 +39,6 @@ func CreateCGroup(containerId string, createCGroupDirs bool) {
 	}
 
 	for _, cgroupDir := range cgroupDirs {
-		if err := os.WriteFile(cgroupDir+"/notify_on_release", []byte("1"), 0700); err != nil {
-			log.Fatalf("Failed to write to cgroup notification file: %v\n", err)
-		}
-
 		if err := os.WriteFile(cgroupDir+"/cgroup.procs", []byte(strconv.Itoa(os.Getpid())), 0700); err != nil {
 			log.Fatalf("Failed to write to cgroup procs file")
 		}
@@ -50,7 +46,7 @@ func CreateCGroup(containerId string, createCGroupDirs bool) {
 }
 
 func RemoveCGroups(containerId string) {
-	cgroupDirs := getCGroupDirc(containerId)
+	cgroupDirs := getCGroupDirs(containerId)
 
 	for _, cgroupDir := range cgroupDirs {
 		if err := os.Remove(cgroupDir); err != nil {
