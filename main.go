@@ -80,16 +80,11 @@ func main() {
 	case "images":
 		image.PrintImages()
 	case "clean":
-		flags := flag.FlagSet{}
-		containerId := flags.String("containerId", "", "Container ID to be cleaned")
-		if err := flags.Parse(os.Args[2:]); err != nil {
-			fmt.Println("Error parsing input parameters: ", err)
+		if len(os.Args) < 3 {
+			utils.ShowGuide()
+			os.Exit(1)
 		}
-
-		if *containerId == "" {
-			log.Fatal("Need containerId input to clean container resource")
-		}
-		run.CleanUpContainer(*containerId)
+		run.CleanUpContainer(os.Args[2])
 	case "rmImage":
 		if len(os.Args) < 3 {
 			utils.ShowGuide()
