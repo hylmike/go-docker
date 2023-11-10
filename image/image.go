@@ -71,7 +71,7 @@ func GetImageByTag(imageName string, tag string) (bool, string) {
 	return false, ""
 }
 
-func imageExistByHash(imageShaHex string) (string, string) {
+func ImageExistByHash(imageShaHex string) (string, string) {
 	idb := imagesDB{}
 	parseImageMetadata(&idb)
 
@@ -199,7 +199,7 @@ func DownloadImageIfRequired(src string) string {
 		log.Printf("image hash: %v\n", imageShaHex)
 		log.Println("Checking if image exists under with other names")
 
-		altImgName, altTag := imageExistByHash(imageShaHex)
+		altImgName, altTag := ImageExistByHash(imageShaHex)
 		if len(altImgName) > 0 && len(altTag) > 0 {
 			log.Printf("The image you requested - %s:%s is same as %s, %s\n", imgName, tag, altImgName, altTag)
 			storeImageMetadata(imgName, tag, imageShaHex)
@@ -247,4 +247,30 @@ func PrintImages() {
 			fmt.Printf("\t%16s\t%s\n", tag, hash)
 		}
 	}
+}
+
+func RemoveImageMetadata(imgShaHex string) {
+	idb := imagesDB{}
+	ientries := imageEntries{}
+	parseImageMetadata(&idb)
+
+	imageName, _ := ImageExistByHash(imgShaHex)
+	if imageName == "" {
+		log.Fatalf("Failed to fetch detailed info of image %s\n", imgShaHex)
+	}
+
+	ientries = idb[imageName]
+	for tag, hash := range ientries {
+		if hash == imgShaHex {
+			delete(ientries, tag)
+		}
+	}
+
+	if len(ientries) == 0 {
+		delete(idb, imageName)
+	} else {
+		idb[imageName] = ientries
+	}
+
+	marshalImageMetadata(idb)
 }

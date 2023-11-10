@@ -90,6 +90,12 @@ func main() {
 			log.Fatal("Need containerId input to clean container resource")
 		}
 		run.CleanUpContainer(*containerId)
+	case "rmImage":
+		if len(os.Args) < 3 {
+			utils.ShowGuide()
+			os.Exit(1)
+		}
+		ps.RemoveImageByHash(os.Args[2])
 	default:
 		utils.ShowGuide()
 	}

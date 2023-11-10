@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go-docker/image"
 	"go-docker/utils"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -45,7 +46,7 @@ func getDistribution(containerId string) (string, error) {
 						leadString := "lowerdir=" + imagesPath + "/"
 						trailerString := option[len(leadString):]
 						imageId := trailerString[:12]
-						imageName, tag := image.GetImageNameAndTag(imageId)
+						imageName, tag := image.ImageExistByHash(imageId)
 
 						return fmt.Sprintf("%s:%s", imageName, tag), nil
 					}
@@ -141,4 +142,28 @@ func PrintRunningContainers() {
 	for _, container := range containers {
 		fmt.Printf("%s\t%s\t%s\n", container.ContainerId, container.Image, container.Command)
 	}
+}
+
+func RemoveImageByHash(imgShaHex string) {
+	imageName, tag := image.ImageExistByHash(imgShaHex)
+	if imageName == "" {
+		log.Fatalf("Can't find image %s\n", imgShaHex)
+	}
+
+	containers, err := GetRunningContainers()
+	if err != nil {
+		log.Fatalf("Failed to get running container list: %v\n", err)
+	}
+
+	for _, container := range containers {
+		if container.Image == imageName+":"+tag {
+			log.Fatalf("Can't remove this image as it is used by container %s\n", container.ContainerId)
+		}
+	}
+
+	if err := os.RemoveAll(utils.GetDockerImagePath() + "/" + imgShaHex); err != nil {
+		log.Fatalf("Failed to remvoe image directory: %v\n", err)
+	}
+
+	image.RemoveImageMetadata(imgShaHex)
 }

@@ -13,7 +13,8 @@
             "showLog": true,
             "env": {},
             // "args": ["run", "alpine", "/bin/sh"],
-            "args": ["ps"],
+            // "args": ["ps"],
+            "args": ["exec", "0fce83eb0f66", "/bin/sh"],
             "asRoot": true,
             "console": "integratedTerminal"
         }

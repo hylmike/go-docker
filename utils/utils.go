@@ -17,7 +17,7 @@ type Manifest []struct {
 	Layers   []string
 }
 
-var Commands = []string{"run", "inner-mode", "setup-netns", "setup-veth", "ps", "exec", "images", "clean"}
+var Commands = []string{"run", "inner-mode", "setup-netns", "setup-veth", "ps", "exec", "images", "clean", "rmImage"}
 
 const dockerHomePath = "/var/lib/go-docker"
 const dockerTempPath = dockerHomePath + "/tmp"
@@ -54,11 +54,11 @@ func ShowGuide() {
 	fmt.Println("Welcome to Go-Docker!")
 	fmt.Println("Supported commands:")
 	fmt.Println("go-docker run [--mem] [--swap] [--pids] [--cpus] <image> <command>")
-	fmt.Println("go-docker clean --containerId")
+	fmt.Println("go-docker ps")
 	fmt.Println("go-docker exec <container-id> <command>")
 	fmt.Println("go-docker images")
+	fmt.Println("go-docker clean --containerId")
 	fmt.Println("go-docker rmi <image-id>")
-	fmt.Println("go-docker ps")
 }
 
 func ValidCommand(command string) bool {

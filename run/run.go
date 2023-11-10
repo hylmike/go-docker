@@ -327,17 +327,6 @@ func ExecCommandInContainer(containerId string) {
 	unix.Setns(int(pidFd.Fd()), unix.CLONE_NEWPID)
 	unix.Setns(int(utsFd.Fd()), unix.CLONE_NEWUTS)
 
-	containerConfig, err := ps.GetContainerDetailsForId(containerId)
-	if err != nil {
-		log.Fatalf("Failed to get container config: %v\n", err)
-	}
-	imageNameAndTag := strings.Split(containerConfig.Image, ":")
-	exist, imgShaHex := image.GetImageByTag(imageNameAndTag[0], imageNameAndTag[1])
-	if !exist {
-		log.Fatalln("Failed to get image details")
-	}
-
-	imgConfig := image.ParseContainerConfig(imgShaHex)
 	containerMountPath := utils.GetDockerContainerPath() + "/" + containerId + "/fs/mnt"
 	cgroups.CreateCGroup(containerId, false)
 
@@ -350,7 +339,6 @@ func ExecCommandInContainer(containerId string) {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Env = imgConfig.Config.Env
 
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Failed to exec command in container: %v", err)
