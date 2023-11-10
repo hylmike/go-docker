@@ -55,10 +55,10 @@ func ShowGuide() {
 	fmt.Println("Supported commands:")
 	fmt.Println("go-docker run [--mem] [--swap] [--pids] [--cpus] <image> <command>")
 	fmt.Println("go-docker ps")
-	fmt.Println("go-docker exec <container-id> <command>")
+	fmt.Println("go-docker exec <containerId> <command>")
 	fmt.Println("go-docker images")
-	fmt.Println("go-docker clean --containerId")
-	fmt.Println("go-docker rmi <image-id>")
+	fmt.Println("go-docker clean <containerId>")
+	fmt.Println("go-docker rmImage <imageId>")
 }
 
 func ValidCommand(command string) bool {
