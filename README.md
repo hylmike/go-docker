@@ -14,8 +14,8 @@ Following are major command supported by go-docker
    * `go-docker ps`
 * List all containers, including running ones and inactive ones
    * `go-docker containers` 
-* Activate container
-   * `go-docker actContainer <containerId>`
+* Activate inactive container and run command
+   * `go-docker actContainerAndRun <containerId> <command>`
 * Run command inside a container with id
    * `go-docker exec <containerId> <command>`
 * List all the local images

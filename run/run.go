@@ -188,6 +188,16 @@ func removeContainerDirs(containerId string) {
 }
 
 func RemoveContainer(containerId string) {
+	container, err := ps.GetContainerDetailsForId(containerId)
+	if err != nil {
+		log.Fatalf("Failed to get container details: %v\n", err)
+	}
+
+	if container.Pid > 0 {
+		fmt.Printf("Container %s is still running now, can't remove it\n", containerId)
+		os.Exit(1)
+	}
+
 	containerPath := utils.GetDockerContainerPath() + "/" + containerId
 	if _, err := os.Stat(containerPath); os.IsNotExist(err) {
 		log.Fatalf("Invalid container id %s", containerId)
@@ -202,7 +212,7 @@ func RemoveContainer(containerId string) {
 func copyNameserverConfig(containerId string) error {
 	resolveFilePaths := []string{
 		"/var/run/systemd/resolve/resolv.conf",
-		"/etc/gockerresolv.conf",
+		"/etc/go-dockerresolv.conf",
 		"/etc/resolv.conf",
 	}
 
@@ -346,5 +356,15 @@ func ExecCommandInContainer(containerId string) {
 }
 
 func ActivateContainer(containerId string) {
+	container, err := ps.GetContainerDetailsForId(containerId)
+	if err != nil {
+		log.Fatalf("Failed to get container details: %v\n", err)
+	}
 
+	if container.Pid > 0 {
+		fmt.Printf("Container %s is running now, no need to activate\n", containerId)
+		os.Exit(0)
+	}
+
+	prepareAndExecuteContainer(0, 0, 0, 0, containerId, os.Args[3:])
 }

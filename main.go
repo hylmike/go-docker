@@ -73,7 +73,7 @@ func main() {
 		ps.PrintRunningContainers()
 	case "containers":
 		ps.PrintAllContainers()
-	case "actContainer":
+	case "actContainerAndRun":
 		if len(os.Args) < 3 {
 			utils.ShowGuide()
 			os.Exit(1)
