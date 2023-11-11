@@ -187,7 +187,7 @@ func removeContainerDirs(containerId string) {
 	}
 }
 
-func CleanUpContainer(containerId string) {
+func RemoveContainer(containerId string) {
 	containerPath := utils.GetDockerContainerPath() + "/" + containerId
 	if _, err := os.Stat(containerPath); os.IsNotExist(err) {
 		log.Fatalf("Invalid container id %s", containerId)
@@ -291,7 +291,7 @@ func SetupContainerExecCommand(
 }
 
 func getPidForRunningContainer(containerId string) int {
-	containers, err := ps.GetRunningContainers()
+	containers, err := ps.GetContainers(true)
 	if err != nil {
 		log.Fatalf("Failed to get running containers: %v\n", err)
 	}
@@ -343,4 +343,8 @@ func ExecCommandInContainer(containerId string) {
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Failed to exec command in container: %v", err)
 	}
+}
+
+func ActivateContainer(containerId string) {
+
 }

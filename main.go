@@ -71,6 +71,14 @@ func main() {
 		run.SetupContainerExecCommand(*mem, *swap, *pids, *cpus, flags.Args()[0], flags.Args()[1:])
 	case "ps":
 		ps.PrintRunningContainers()
+	case "containers":
+		ps.PrintAllContainers()
+	case "actContainer":
+		if len(os.Args) < 3 {
+			utils.ShowGuide()
+			os.Exit(1)
+		}
+		run.ActivateContainer(os.Args[2])
 	case "setup-netns":
 		network.SetupNewNetworkNamespace(os.Args[2])
 	case "setup-veth":
@@ -79,12 +87,12 @@ func main() {
 		run.ExecCommandInContainer(os.Args[2])
 	case "images":
 		image.PrintImages()
-	case "clean":
+	case "rmContainer":
 		if len(os.Args) < 3 {
 			utils.ShowGuide()
 			os.Exit(1)
 		}
-		run.CleanUpContainer(os.Args[2])
+		run.RemoveContainer(os.Args[2])
 	case "rmImage":
 		if len(os.Args) < 3 {
 			utils.ShowGuide()

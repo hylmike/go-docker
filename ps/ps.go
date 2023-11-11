@@ -15,6 +15,7 @@ import (
 type ContainerInfo struct {
 	ContainerId string
 	Image       string
+	Status      string
 	Command     string
 	Pid         int
 }
@@ -59,7 +60,12 @@ func getDistribution(containerId string) (string, error) {
 }
 
 func GetContainerDetailsForId(containerId string) (ContainerInfo, error) {
-	container := ContainerInfo{}
+	image, _ := getDistribution(containerId)
+	container := ContainerInfo{
+		ContainerId: containerId,
+		Image:       image,
+	}
+
 	var procs []string
 	procsPath := basePath + "/" + containerId + "/cgroup.procs"
 
@@ -94,19 +100,14 @@ func GetContainerDetailsForId(containerId string) (ContainerInfo, error) {
 			return container, err
 		}
 
-		image, _ := getDistribution(containerId)
-		container = ContainerInfo{
-			ContainerId: containerId,
-			Image:       image,
-			Command:     cmd[len(realContainerMountPath):],
-			Pid:         pid,
-		}
+		container.Command = cmd[len(realContainerMountPath):]
+		container.Pid = pid
 	}
 
 	return container, nil
 }
 
-func GetRunningContainers() ([]ContainerInfo, error) {
+func GetContainers(activeOnly bool) ([]ContainerInfo, error) {
 	var containers []ContainerInfo
 	basePath := utils.GetDockerContainerPath()
 
@@ -121,7 +122,17 @@ func GetRunningContainers() ([]ContainerInfo, error) {
 			for _, entry := range entries {
 				if entry.IsDir() {
 					container, _ := GetContainerDetailsForId(entry.Name())
-					if container.Pid > 0 {
+					if activeOnly {
+						if container.Pid > 0 {
+							container.Status = "active"
+							containers = append(containers, container)
+						}
+					} else {
+						if container.Pid > 0 {
+							container.Status = "active"
+						} else {
+							container.Status = "inactive"
+						}
 						containers = append(containers, container)
 					}
 				}
@@ -133,12 +144,12 @@ func GetRunningContainers() ([]ContainerInfo, error) {
 }
 
 func PrintRunningContainers() {
-	containers, err := GetRunningContainers()
+	containers, err := GetContainers(true)
 	if err != nil {
 		os.Exit(1)
 	}
 
-	fmt.Println("CONTAINER ID\tIMAGE\tCOMMAND")
+	fmt.Println("CONTAINER ID\tIMAGE\t\tCOMMAND")
 	for _, container := range containers {
 		fmt.Printf("%s\t%s\t%s\n", container.ContainerId, container.Image, container.Command)
 	}
@@ -150,7 +161,7 @@ func RemoveImageByHash(imgShaHex string) {
 		log.Fatalf("Can't find image %s\n", imgShaHex)
 	}
 
-	containers, err := GetRunningContainers()
+	containers, err := GetContainers(true)
 	if err != nil {
 		log.Fatalf("Failed to get running container list: %v\n", err)
 	}
@@ -166,4 +177,16 @@ func RemoveImageByHash(imgShaHex string) {
 	}
 
 	image.RemoveImageMetadata(imgShaHex)
+}
+
+func PrintAllContainers() {
+	containers, err := GetContainers(false)
+	if err != nil {
+		log.Fatalf("Failed to load containers: %v\n", err)
+	}
+
+	fmt.Println("CONTAINER ID\tIMAGE\t\tSTATUS")
+	for _, container := range containers {
+		fmt.Printf("%s\t%s\t%s\n", container.ContainerId, container.Image, container.Status)
+	}
 }

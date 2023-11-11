@@ -10,14 +10,18 @@ Go-docker can emulate the core of Docker functions, letting you manage Docker im
 Following are major command supported by go-docker
 * Run a process in a container
    * `go-docker run <--cpus=cpus-max> <--mem=mem-max> <--pids=pids-max> <image[:tag]> </path/to/command>`
-* List running containers
+* List running / active containers
    * `go-docker ps`
+* List all containers, including running ones and inactive ones
+   * `go-docker containers` 
+* Activate container
+   * `go-docker actContainer <containerId>`
 * Run command inside a container with id
    * `go-docker exec <containerId> <command>`
 * List all the local images
    * `go-docker images`
 * Clean a container and related data with id
-   * `go-docker clean <containerId>`
+   * `go-docker rmContainer <containerId>`
 * Delete a local image and related metadata with id
    * `go-docker rmImage <imageId>`
 
