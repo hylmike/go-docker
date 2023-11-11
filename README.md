@@ -114,3 +114,8 @@ lo        Link encap:Local Loopback
 The tool and major functions has been tested with Ubuntu 22.x and 23.x with latest go libraries, details can refer to go.mod file
 
 Reference: This tool heavily refer to gocker (https://github.com/shuveb/containers-the-hard-way), but rewrote some parts with latest librarys and linux configurations, fixed bugs also with better file structure and error handling design
+
+With V1.1 has add following new commands & functions:
+- List all the containers, including inactive and active ones
+- Active idle container and run command in it
+- Remove container and related resource
