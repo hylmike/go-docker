@@ -85,7 +85,30 @@ alpine
 ubuntu
                   latest        e4c58958181a
 
-/go-docker$ sudo ./go-docker rmImage e4c58958181a                  
+/go-docker$ sudo ./go-docker rmImage e4c58958181a 
+
+/go-docker$ sudo ./go-docker containers
+CONTAINER ID    IMAGE           STATUS
+69a7bf70bde7    alpine:latest   active
+9460d4c69231    alpine:latest   inactive
+ce193d48807e    alpine:latest   inactive
+
+/go-docker$ sudo ./go-docker actContainerAndRun 9460d4c69231 /bin/sh
+2023/11/11 03:55:37 Failed to configure local interface: file exists
+/ # ps aux
+PID   USER     TIME  COMMAND
+    1 root      0:00 /proc/self/exe inner-mode 9460d4c69231 /bin/sh
+    7 root      0:00 /bin/sh
+    8 root      0:00 ps aux
+/ # ifconfig
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
 ```
 
 The tool and major functions has been tested with Ubuntu 22.x and 23.x with latest go libraries, details can refer to go.mod file
